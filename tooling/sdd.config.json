@@ -1,0 +1,27 @@
+{
+  "specDir": "specs",
+  "artifacts": {
+    "spec":  "specs/*/spec.md",
+    "plan":  "specs/*/plan.md",
+    "tasks": "specs/*/tasks.md"
+  },
+  "_comment_impl": "Default-deny for code: any code-extension file is gated unless an alwaysAllow rule (configs/scaffold/docs/assets) exempts it. Bash globbing: * spans /.",
+  "implementationGlobs": [
+    "src/*", "app/*", "lib/*", "server/*", "db/*",
+    "components/*", "hooks/*", "store/*", "pages/*",
+    "middleware.ts",
+    "*.ts", "*.tsx", "*.js", "*.jsx", "*.mjs", "*.cjs"
+  ],
+  "_comment_allow": "Named config files only (NOT a blanket *.config.* which would span / and shadow src code).",
+  "alwaysAllowGlobs": [
+    "specs/*", "openspec/*", "tooling/*", ".claude/*",
+    "*.md", ".gitignore", ".gitattributes", ".env.example", ".editorconfig", ".nvmrc",
+    "package.json", "package-lock.json", "pnpm-lock.yaml", "yarn.lock",
+    "tsconfig.json", "tsconfig.*.json",
+    "next.config.*", "drizzle.config.*", "vitest.config.*", "jest.config.*",
+    "tailwind.config.*", "postcss.config.*", "eslint.config.*", "vite.config.*",
+    ".eslintrc*", ".prettierrc*", ".prettierignore",
+    "next-env.d.ts", "*.d.ts",
+    "*.css", "*.scss", "*.svg", "*.ico", "public/*"
+  ]
+}

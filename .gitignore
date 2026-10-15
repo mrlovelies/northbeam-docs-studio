@@ -15,6 +15,6 @@ data/*.db
 data/*.db-*
 .tmp/
 
-# local SDD rails + agent config — process tooling, NOT part of the graded deliverable
-/tooling/
-/.claude/
+# SDD rails + agent config are intentionally TRACKED: the gate is part of the
+# submission (it demonstrates the AI-assisted process). See tooling/ and the
+# process note in the README.
