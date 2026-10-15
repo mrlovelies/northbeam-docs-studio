@@ -1,0 +1,20 @@
+# dependencies / build
+node_modules/
+.next/
+dist/
+build/
+coverage/
+*.log
+
+# env / local data
+.env
+.env.*
+!.env.example
+.DS_Store
+data/*.db
+data/*.db-*
+.tmp/
+
+# local SDD rails + agent config — process tooling, NOT part of the graded deliverable
+/tooling/
+/.claude/
