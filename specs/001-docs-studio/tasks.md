@@ -14,11 +14,11 @@ green. Red test commits are marked as such, e.g. `test: INV-2 atomicity, pre-imp
 
 ## Phase 1: Setup
 
-- [ ] T001 Scaffold Next.js 16 app (App Router, TypeScript, `src/`) at repo root
-- [ ] T002 Add deps `better-sqlite3`, `drizzle-orm`, `react-markdown`; dev `drizzle-kit`, `vitest`, `tailwindcss` + `@tailwindcss/postcss`, `tsx`, and types (`package.json`)
-- [ ] T003 [P] Configure Tailwind v4, CSS-first: `postcss.config.mjs` with `@tailwindcss/postcss`, and `@import "tailwindcss"` in `app/globals.css` (no JS config)
-- [ ] T004 [P] Configure Vitest (`vitest.config.ts`)
-- [ ] T005 Add scripts `dev`, `setup` (migrate, idempotent), `test` (`package.json`)
+- [x] T001 Scaffold Next.js 16 app (App Router, TypeScript, `src/`) at repo root
+- [x] T002 Add deps `better-sqlite3`, `drizzle-orm`, `react-markdown`; dev `drizzle-kit`, `vitest`, `tailwindcss` + `@tailwindcss/postcss`, `tsx`, and types (`package.json`)
+- [x] T003 [P] Configure Tailwind v4, CSS-first: `postcss.config.mjs` with `@tailwindcss/postcss`, and `@import "tailwindcss"` in `app/globals.css` (no JS config)
+- [x] T004 [P] Configure Vitest (`vitest.config.ts`)
+- [x] T005 Add scripts `dev`, `setup` (migrate, idempotent), `test` (`package.json`)
 
 ## Phase 2: Foundational (blocks all capability work)
 
