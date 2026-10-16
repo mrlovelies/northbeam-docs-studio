@@ -7,18 +7,14 @@
 **Status**: Draft
 
 **Input**: A small internal docs CMS. Writers create, edit, publish, unpublish,
-and version articles; anonymous readers see only published content. The real
-point of the exercise is a handful of invariants about what readers can see,
-what can change, and what can be lost.
+and version articles; anonymous readers see only published content.
 
 ## What we're building
 
-Northbeam writers author documentation articles and publish them to a public
-docs site. The one idea everything hangs off: an article holds two separate
-things. A mutable **draft** the writer edits freely, and a list of immutable
-**published versions**. Readers are only ever connected to a published version,
-never the draft. Keeping those two apart is what makes "an edit can't break
-what's live" true by construction instead of by discipline.
+Northbeam writers author documentation articles for a public docs site. An
+article holds two separate things: a mutable **draft** the writer edits freely,
+and a list of immutable **published versions**. Readers only ever read a
+published version, never the draft.
 
 Publishing the draft creates a numbered, frozen snapshot (a version) and points
 the article at it. The writer can keep editing the draft afterward without
@@ -26,10 +22,7 @@ touching what readers see, until they publish again and mint the next version.
 They can list history, view any old version, restore one back into the draft,
 unpublish, and republish.
 
-## The six invariants (restated in my own words)
-
-These are the actual test. The plan covers how each one is enforced; here I'm
-just stating what must always hold.
+## The six invariants
 
 - **INV-1 - Published content is frozen.** Once a version is published its title,
   body, and tags never change. Every edit goes through the draft and only reaches
@@ -43,16 +36,14 @@ just stating what must always hold.
   unpublished article still points at its last snapshot, so that one stays
   protected too.
 - **INV-4 - Restore is non-destructive.** Restoring an old version copies its
-  content into the draft and does nothing else: no version created, none removed,
-  published status untouched, and it does not publish. The writer publishes
-  afterward if they want it live.
+  content into the draft and nothing else: no version created, none removed,
+  status and pointer untouched, and it does not publish.
 - **INV-5 - Concurrent edits don't clobber.** If two sessions edit the same draft
   from the same starting point, the first save wins and the second is rejected as
   stale with a clear error. No accepted edit is silently overwritten.
 - **INV-6 - Unpublish preserves.** Unpublishing only changes status. The last
-  published snapshot and the original publishedAt survive, so you never lose the
-  ability to see what was published, and republishing keeps that original
-  publishedAt.
+  published snapshot and the original publishedAt survive, and republishing keeps
+  that original publishedAt.
 
 ## Functional requirements
 
@@ -90,13 +81,13 @@ just stating what must always hold.
 - **Delete the live version** is refused, including when the article is
   unpublished (it still references that snapshot).
 - **Deleting a non-live version** leaves gaps in version numbers. That is
-  expected; we do not renumber, because the numbers are history.
+  expected; we do not renumber.
 - **Restore then publish** mints a fresh, next-numbered version from the draft.
   It does not revive or overwrite the version it was restored from.
 - **Publishing an unchanged draft** still creates a new version by default, so
   unpublish then republish with no edit produces an identical-content version.
-  Called out so it reads as intended, not a bug. Idempotent publish is the one
-  stretch I'd consider if time allows (see out of scope).
+  Idempotent publish (the one candidate stretch) would change this; out of scope
+  for v1.
 - **404 for readers** is returned for unknown, draft-only, and unpublished
   articles alike, so we do not leak whether an unpublished article exists.
 - **Concurrent publishes** of one article must not produce two versions sharing a
