@@ -13,7 +13,7 @@ hold when the API is called directly.
 
 ## Stack (decided)
 
-- **Next.js 15 (App Router, TypeScript)** - one app, one `npm install`, API and
+- **Next.js 16 (App Router, TypeScript)** - one app, one `npm install`, API and
   minimal UI colocated.
 - **SQLite via better-sqlite3** - a real file (not `:memory:`), persists across
   restarts, fully ACID. Its transactions are **synchronous**, so the publish

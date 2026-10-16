@@ -14,7 +14,7 @@ green. Red test commits are marked as such, e.g. `test: INV-2 atomicity, pre-imp
 
 ## Phase 1: Setup
 
-- [ ] T001 Scaffold Next.js 15 app (App Router, TypeScript, `src/`) at repo root
+- [ ] T001 Scaffold Next.js 16 app (App Router, TypeScript, `src/`) at repo root
 - [ ] T002 Add deps `better-sqlite3`, `drizzle-orm`, `react-markdown`; dev `drizzle-kit`, `vitest`, `tailwindcss` (+ `postcss`, `autoprefixer`), types (`package.json`)
 - [ ] T003 [P] Configure Tailwind (`tailwind.config.ts`, `postcss.config.js`, `app/globals.css`)
 - [ ] T004 [P] Configure Vitest (`vitest.config.ts`)
