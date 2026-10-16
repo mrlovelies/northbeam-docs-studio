@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "setup": "tsx src/db/migrate.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
