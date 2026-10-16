@@ -26,7 +26,7 @@ green. Red test commits are marked as such, e.g. `test: INV-2 atomicity, pre-imp
 - [x] T007 [INV-1][INV-2] Migration (`src/db/migrate.ts`): `CHECK (status <> 'published' OR current_published_version_id IS NOT NULL)`, a `BEFORE UPDATE ... ABORT` trigger on `article_versions`, and `PRAGMA foreign_keys=ON; journal_mode=WAL; busy_timeout=5000`
 - [x] T008 [P] Dev-safe DB singleton, one handle across Next hot-reload with PRAGMAs applied per connection (`src/db/client.ts`)
 - [x] T009 [P] Typed domain errors mapped to HTTP status: NotFound 404, Conflict 409, Validation 400 (`src/domain/errors.ts`)
-- [ ] T010 Test harness: temp SQLite file, migrate-once + truncate-per-test, two-connection helper for concurrency (`tests/helpers.ts`)
+- [x] T010 Test harness: temp SQLite file, migrate-once + truncate-per-test, two-connection helper for concurrency (`tests/helpers.ts`)
 
 ## Phase 3: Create + edit draft [INV-5]
 
