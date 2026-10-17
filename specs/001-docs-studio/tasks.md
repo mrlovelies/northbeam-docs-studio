@@ -37,7 +37,7 @@ commits reference task + invariant, e.g. `(T017, INV-2)`.
 
 ## Phase 4: Publish + unpublish [INV-1][INV-2][INV-6]
 
-- [ ] T014 [INV-2] Test (first): publish biconditional, status=published iff pointer set iff version row exists; republish gives v2, pointer moves, v1 retained (`tests/publish.test.ts`)
+- [x] T014 [INV-2] Test (first): publish biconditional, status=published iff pointer set iff version row exists; republish gives v2, pointer moves, v1 retained (`tests/publish.test.ts`)
 - [ ] T015 [INV-1] Test (first): edit draft after publish, v1 content unchanged, reader still sees v1, status still published (`tests/immutability.test.ts`)
 - [ ] T016 [INV-6] Test (first): unpublish gives reader 404, snapshot + published_at preserved; republish keeps original published_at; unpublish never-published gives 409 (`tests/unpublish.test.ts`)
 - [ ] T017 [INV-1][INV-2] Service `publish()` as one `BEGIN IMMEDIATE` transaction: compute next version number inside the lock, insert the immutable snapshot (copy of draft), set status + pointer + `published_at = COALESCE(published_at, now)` (`src/domain/articles.ts`)
