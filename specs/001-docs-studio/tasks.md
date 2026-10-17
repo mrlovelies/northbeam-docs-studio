@@ -32,7 +32,7 @@ green. Red test commits are marked as such, e.g. `test: INV-2 atomicity, pre-imp
 
 - [x] T011 [INV-5] Test (write first, must fail): two writes from the same `draft_version`, first 200, second 409; retry after re-read 200; missing token 400 (`tests/concurrency.test.ts`)
 - [x] T012 [INV-5] Service `createArticle`, `getArticle`, `listArticles`, `updateDraft` (conditional `UPDATE ... WHERE id=? AND draft_version=?`; `changes===0` means conflict; missing token means validation error) (`src/domain/articles.ts`)
-- [ ] T013 [INV-5] Routes `POST`/`GET /api/articles`, `GET /api/articles/[id]`, `PUT /api/articles/[id]/draft`; map error classes to 400/404/409 (`app/api/articles/...`)
+- [x] T013 [INV-5] Routes `POST`/`GET /api/articles`, `GET /api/articles/[id]`, `PUT /api/articles/[id]/draft`; map error classes to 400/404/409 (`app/api/articles/...`)
 
 ## Phase 4: Publish + unpublish [INV-1][INV-2][INV-6]
 
