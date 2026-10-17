@@ -8,9 +8,10 @@ invariants, not separate user stories). Format: `[ ] Txxx [P?] [INV-x?] Descript
 
 Test discipline: for each invariant, commit the test first (it fails, the behavior
 does not exist yet), then commit the implementation that turns it green, so the
-history proves test-before-code the way it proves spec-before-code. HEAD is always
-green. Red test commits are marked as such, e.g. `test: INV-2 atomicity, pre-impl
-(T014)`; implementation commits reference task + invariant, e.g. `(T017, INV-2)`.
+history proves test-before-code the way it proves spec-before-code. The interim
+test commits are red by design and labelled pre-impl (e.g. `test: INV-2 atomicity,
+pre-impl (T014)`); each slice ends green and the final state is green. Implementation
+commits reference task + invariant, e.g. `(T017, INV-2)`.
 
 ## Phase 1: Setup
 
