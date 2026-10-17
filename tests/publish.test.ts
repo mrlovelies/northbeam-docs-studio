@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterAll } from "vitest";
 import { eq } from "drizzle-orm";
 import { createArticle, updateDraft, getArticle, publish } from "@/src/domain/articles";
+import { ConflictError, ValidationError } from "@/src/domain/errors";
 import { articleVersions } from "@/src/db/schema";
 import { createTestDb } from "./helpers";
 
@@ -52,5 +53,45 @@ describe("INV-2 atomic publish", () => {
     expect(after.currentPublishedVersionId).toBe(v2.id);
     expect(after.publishedAt).toBe(firstPublishedAt);
     expect(versionsOf(a.id).map((v) => v.versionNumber).sort()).toEqual([1, 2]);
+  });
+});
+
+describe("publish version token (INV-5)", () => {
+  it("rejects a stale token with 409 and does not publish", () => {
+    const a = createArticle(t.db, { slug: "s3", title: "T", body: "B", tags: [] });
+    const stale = a.draftVersion;
+    updateDraft(t.db, a.id, { title: "T2", expectedVersion: stale });
+
+    let err: unknown;
+    try {
+      publish(t.db, a.id, stale);
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(ConflictError);
+    expect((err as ConflictError).code).toBe("version_conflict");
+    expect((err as ConflictError).details?.current).toBe(2);
+    expect(getArticle(t.db, a.id).status).toBe("draft");
+    expect(versionsOf(a.id)).toHaveLength(0);
+  });
+
+  it("rejects a missing token with 400", () => {
+    const a = createArticle(t.db, { slug: "s4", title: "T", body: "B", tags: [] });
+    let err: unknown;
+    try {
+      // @ts-expect-error omitting the token must be refused at runtime
+      publish(t.db, a.id);
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(ValidationError);
+    expect(getArticle(t.db, a.id).status).toBe("draft");
+  });
+
+  it("publishes when the token matches the current draft", () => {
+    const a = createArticle(t.db, { slug: "s5", title: "T", body: "B", tags: [] });
+    const v1 = publish(t.db, a.id, a.draftVersion);
+    expect(v1.versionNumber).toBe(1);
+    expect(getArticle(t.db, a.id).status).toBe("published");
   });
 });
