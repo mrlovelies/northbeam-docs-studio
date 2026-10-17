@@ -1,6 +1,11 @@
 import { and, eq, sql } from "drizzle-orm";
 import type { DrizzleDb } from "@/src/db/client";
-import { articles, type Article } from "@/src/db/schema";
+import {
+  articles,
+  articleVersions,
+  type Article,
+  type ArticleVersion,
+} from "@/src/db/schema";
 import { ConflictError, NotFoundError, ValidationError } from "./errors";
 
 export interface CreateArticleInput {
@@ -87,4 +92,55 @@ export function updateDraft(db: DrizzleDb, id: string, input: UpdateDraftInput):
   }
 
   return getArticle(db, id);
+}
+
+// Publish the current draft as the next immutable version, atomically (INV-2).
+// One IMMEDIATE transaction: compute the next version number inside the lock,
+// insert a copy of the draft (the copy is what makes INV-1 hold), then flip
+// status + pointer + publishedAt. A crash or a racing publish can only leave the
+// article fully before or fully after; UNIQUE(article_id, version_number) turns
+// a numbering race into a rollback. publishedAt is set once, never recomputed
+// (INV-6).
+export function publish(db: DrizzleDb, id: string): ArticleVersion {
+  return db.transaction(
+    (tx) => {
+      const article = tx.select().from(articles).where(eq(articles.id, id)).get();
+      if (!article) throw new NotFoundError(`article ${id} not found`);
+
+      const row = tx
+        .select({
+          max: sql<number>`coalesce(max(${articleVersions.versionNumber}), 0)`,
+        })
+        .from(articleVersions)
+        .where(eq(articleVersions.articleId, id))
+        .get();
+      const nextNumber = (row?.max ?? 0) + 1;
+      const now = new Date().toISOString();
+
+      const version = tx
+        .insert(articleVersions)
+        .values({
+          articleId: id,
+          versionNumber: nextNumber,
+          title: article.draftTitle,
+          body: article.draftBody,
+          tags: article.draftTags,
+        })
+        .returning()
+        .get();
+
+      tx.update(articles)
+        .set({
+          status: "published",
+          currentPublishedVersionId: version.id,
+          publishedAt: sql`coalesce(${articles.publishedAt}, ${now})`,
+          updatedAt: now,
+        })
+        .where(eq(articles.id, id))
+        .run();
+
+      return version;
+    },
+    { behavior: "immediate" },
+  );
 }
