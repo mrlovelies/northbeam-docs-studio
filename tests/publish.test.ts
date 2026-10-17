@@ -25,7 +25,7 @@ describe("INV-2 atomic publish", () => {
     expect(before.currentPublishedVersionId).toBeNull();
     expect(versionsOf(a.id)).toHaveLength(0);
 
-    const v1 = publish(t.db, a.id);
+    const v1 = publish(t.db, a.id, a.draftVersion);
     expect(v1.versionNumber).toBe(1);
 
     const after = getArticle(t.db, a.id);
@@ -39,14 +39,14 @@ describe("INV-2 atomic publish", () => {
 
   it("republish mints v2, moves the pointer, retains v1, preserves publishedAt (INV-6)", () => {
     const a = createArticle(t.db, { slug: "s2", title: "T", body: "B", tags: [] });
-    publish(t.db, a.id);
+    publish(t.db, a.id, a.draftVersion);
     const firstPublishedAt = getArticle(t.db, a.id).publishedAt;
 
     updateDraft(t.db, a.id, {
       title: "T2",
       expectedVersion: getArticle(t.db, a.id).draftVersion,
     });
-    const v2 = publish(t.db, a.id);
+    const v2 = publish(t.db, a.id, getArticle(t.db, a.id).draftVersion);
 
     expect(v2.versionNumber).toBe(2);
     const after = getArticle(t.db, a.id);

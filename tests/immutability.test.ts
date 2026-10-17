@@ -15,7 +15,7 @@ afterAll(() => t.close());
 describe("INV-1 published content is frozen", () => {
   it("editing the draft after publish leaves v1 byte-identical and still live", () => {
     const a = createArticle(t.db, { slug: "s", title: "Orig", body: "OrigBody", tags: ["a"] });
-    const v1 = publish(t.db, a.id);
+    const v1 = publish(t.db, a.id, a.draftVersion);
 
     updateDraft(t.db, a.id, {
       title: "Edited",

@@ -101,11 +101,20 @@ export function updateDraft(db: DrizzleDb, id: string, input: UpdateDraftInput):
 // article fully before or fully after; UNIQUE(article_id, version_number) turns
 // a numbering race into a rollback. publishedAt is set once, never recomputed
 // (INV-6).
-export function publish(db: DrizzleDb, id: string): ArticleVersion {
+export function publish(db: DrizzleDb, id: string, expectedVersion: number): ArticleVersion {
+  if (expectedVersion === undefined || expectedVersion === null) {
+    throw new ValidationError("expectedVersion is required to publish");
+  }
   return db.transaction(
     (tx) => {
       const article = tx.select().from(articles).where(eq(articles.id, id)).get();
       if (!article) throw new NotFoundError(`article ${id} not found`);
+      // INV-5: don't snapshot a draft that moved under the writer.
+      if (article.draftVersion !== expectedVersion) {
+        throw new ConflictError("version_conflict", "draft is out of date", {
+          current: article.draftVersion,
+        });
+      }
 
       const row = tx
         .select({
