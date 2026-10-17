@@ -153,3 +153,18 @@ export function publish(db: DrizzleDb, id: string, expectedVersion: number): Art
     { behavior: "immediate" },
   );
 }
+
+// Unpublish: a status-only takedown (INV-6). Keeps the pointer, publishedAt, and
+// every version row, so what was published is never lost. Republishing is simply
+// publish() again, which preserves the original publishedAt via COALESCE.
+export function unpublish(db: DrizzleDb, id: string): Article {
+  const article = getArticle(db, id);
+  if (article.status !== "published") {
+    throw new ConflictError("not_published", "article is not currently published");
+  }
+  db.update(articles)
+    .set({ status: "unpublished", updatedAt: new Date().toISOString() })
+    .where(eq(articles.id, id))
+    .run();
+  return getArticle(db, id);
+}

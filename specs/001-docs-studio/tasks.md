@@ -42,7 +42,7 @@ commits reference task + invariant, e.g. `(T017, INV-2)`.
 - [x] T016 [INV-6] Test (first): unpublish gives reader 404, snapshot + published_at preserved; republish keeps original published_at; unpublish never-published gives 409 (`tests/unpublish.test.ts`)
 - [x] T017 [INV-1][INV-2] Service `publish()` as one `BEGIN IMMEDIATE` transaction: compute next version number inside the lock, insert the immutable snapshot (copy of draft), set status + pointer + `published_at = COALESCE(published_at, now)` (`src/domain/articles.ts`)
 - [x] T017a [INV-5] Require a fresh version token on `publish()`: stale -> 409 version_conflict{current}, missing -> 400 (same optimistic-lock contract as draft writes) (`src/domain/articles.ts`, `tests/publish.test.ts`)
-- [ ] T018 [INV-6] Service `unpublish()`, status-only, reject if never published (`src/domain/articles.ts`)
+- [x] T018 [INV-6] Service `unpublish()`, status-only, reject if never published (`src/domain/articles.ts`)
 - [ ] T019 [INV-1][INV-2][INV-6] Routes `POST /api/articles/[id]/publish` and `.../unpublish` (`app/api/articles/[id]/...`)
 
 ## Phase 5: Versions, history, restore, delete [INV-1][INV-3][INV-4]
