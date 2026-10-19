@@ -48,7 +48,7 @@ commits reference task + invariant, e.g. `(T017, INV-2)`.
 ## Phase 5: Versions, history, restore, delete [INV-1][INV-3][INV-4]
 
 - [x] T020 [INV-4] Test (first): restore leaves version count + status + pointer unchanged and does not publish; restore-then-publish mints a new number (`tests/restore.test.ts`)
-- [ ] T021 [INV-3] Test (first): delete live version gives 409 with the row still present and still served; delete non-live gives 204 with remaining numbers not renumbered (`tests/delete-version.test.ts`)
+- [x] T021 [INV-3] Test (first): delete live version gives 409 with the row still present and still served; delete non-live gives 204 with remaining numbers not renumbered; FK ON DELETE RESTRICT refuses a raw delete of the live row (`tests/delete-version.test.ts`)
 - [ ] T022 [INV-1] Service + routes: list versions newest-first, get one version (`src/domain/articles.ts`, `app/api/articles/[id]/versions/...`)
 - [ ] T023 [INV-4] Service + route `restore()`: copy version content into draft, bump `draft_version`, carry the token; no version create/remove, no status/pointer change, no publish (`POST /api/articles/[id]/versions/[vid]/restore`)
 - [ ] T024 [INV-3] Service + route `deleteVersion()`: pre-check rejects the live version with 409, FK `ON DELETE RESTRICT` is the backstop (`DELETE /api/articles/[id]/versions/[vid]`)
