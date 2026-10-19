@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { DrizzleDb } from "@/src/db/client";
 import {
   articles,
@@ -61,6 +61,30 @@ export function getArticle(db: DrizzleDb, id: string): Article {
 // List all articles (writer view).
 export function listArticles(db: DrizzleDb): Article[] {
   return db.select().from(articles).all();
+}
+
+// List an article's version history, newest-first (INV-1). 404 if the article
+// is absent, so the caller never gets an empty list for a nonexistent article.
+export function listVersions(db: DrizzleDb, id: string): ArticleVersion[] {
+  getArticle(db, id);
+  return db
+    .select()
+    .from(articleVersions)
+    .where(eq(articleVersions.articleId, id))
+    .orderBy(desc(articleVersions.versionNumber))
+    .all();
+}
+
+// Fetch one version's exact content (INV-1). 404 unless the version exists and
+// belongs to this article.
+export function getVersion(db: DrizzleDb, id: string, versionId: string): ArticleVersion {
+  const row = db
+    .select()
+    .from(articleVersions)
+    .where(and(eq(articleVersions.id, versionId), eq(articleVersions.articleId, id)))
+    .get();
+  if (!row) throw new NotFoundError(`version ${versionId} not found`);
+  return row;
 }
 
 // Edit the draft. INV-5: the compare-and-set lives in the WHERE clause, so a
