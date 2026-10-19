@@ -178,6 +178,44 @@ export function publish(db: DrizzleDb, id: string, expectedVersion: number): Art
   );
 }
 
+// Restore a version's content into the draft (INV-4). This is a draft write: it
+// copies title/body/tags from the chosen version into draft_*, bumps the
+// optimistic-lock token, and does nothing else: no version created or removed,
+// no status or pointer change, no publish. The token is required and checked the
+// same way as any draft edit (INV-5).
+export function restore(
+  db: DrizzleDb,
+  id: string,
+  versionId: string,
+  expectedVersion: number,
+): Article {
+  if (expectedVersion === undefined || expectedVersion === null) {
+    throw new ValidationError("expectedVersion is required to restore");
+  }
+  const version = getVersion(db, id, versionId); // 404 unless it belongs to the article
+
+  const result = db
+    .update(articles)
+    .set({
+      draftTitle: version.title,
+      draftBody: version.body,
+      draftTags: version.tags,
+      draftVersion: sql`${articles.draftVersion} + 1`,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(and(eq(articles.id, id), eq(articles.draftVersion, expectedVersion)))
+    .run();
+
+  if (result.changes === 0) {
+    const current = db.select().from(articles).where(eq(articles.id, id)).get();
+    if (!current) throw new NotFoundError(`article ${id} not found`);
+    throw new ConflictError("version_conflict", "draft is out of date", {
+      current: current.draftVersion,
+    });
+  }
+  return getArticle(db, id);
+}
+
 // Unpublish: a status-only takedown (INV-6). Keeps the pointer, publishedAt, and
 // every version row, so what was published is never lost. Republishing is simply
 // publish() again, which preserves the original publishedAt via COALESCE.
