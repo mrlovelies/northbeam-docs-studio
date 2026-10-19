@@ -230,3 +230,19 @@ export function unpublish(db: DrizzleDb, id: string): Article {
     .run();
   return getArticle(db, id);
 }
+
+// Delete a non-live version (INV-3). The version an article currently points at
+// cannot be deleted: the service pre-checks and returns a clean 409, and the FK
+// ON DELETE RESTRICT is the authoritative backstop (it also closes the
+// check-then-delete race). An unpublished article still points at its last
+// snapshot, so that one is protected too.
+export function deleteVersion(db: DrizzleDb, id: string, versionId: string): void {
+  const article = getArticle(db, id); // 404 if the article is absent
+  const version = getVersion(db, id, versionId); // 404 unless it belongs to the article
+
+  if (article.currentPublishedVersionId === version.id) {
+    throw new ConflictError("live_version", "cannot delete the live version");
+  }
+
+  db.delete(articleVersions).where(eq(articleVersions.id, version.id)).run();
+}
