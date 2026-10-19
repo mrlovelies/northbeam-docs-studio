@@ -42,4 +42,27 @@ describe("INV-1 published content is frozen", () => {
     // The draft reflects the edit.
     expect(after.draftTitle).toBe("Edited");
   });
+
+  it("the DB trigger refuses a raw UPDATE of a version row (teeth under INV-1)", () => {
+    // Bypass the service entirely and try to mutate a frozen snapshot. The
+    // service has no update path to versions; the BEFORE UPDATE trigger is the
+    // backstop that catches a stray ORM full-row save review would miss.
+    const a = createArticle(t.db, { slug: "s2", title: "Orig", body: "OrigBody", tags: ["a"] });
+    const v1 = publish(t.db, a.id, a.draftVersion);
+
+    expect(() =>
+      t.db
+        .update(articleVersions)
+        .set({ title: "tampered" })
+        .where(eq(articleVersions.id, v1.id))
+        .run(),
+    ).toThrow(/article_versions are immutable/);
+
+    const stored = t.db
+      .select()
+      .from(articleVersions)
+      .where(eq(articleVersions.id, v1.id))
+      .get()!;
+    expect(stored.title).toBe("Orig");
+  });
 });
