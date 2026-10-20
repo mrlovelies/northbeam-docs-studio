@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterAll } from "vitest";
 import { eq } from "drizzle-orm";
 import { createArticle, updateDraft, getArticle, publish } from "@/src/domain/articles";
 import { ConflictError, ValidationError } from "@/src/domain/errors";
-import { articleVersions } from "@/src/db/schema";
+import { articles, articleVersions } from "@/src/db/schema";
 import { createTestDb } from "./helpers";
 
 // INV-2: publishing is atomic. Snapshot insert + status flip + pointer move
@@ -93,5 +93,43 @@ describe("publish version token (INV-5)", () => {
     const v1 = publish(t.db, a.id, a.draftVersion);
     expect(v1.versionNumber).toBe(1);
     expect(getArticle(t.db, a.id).status).toBe("published");
+  });
+});
+
+// INV-2's atomicity rests on DB constraints: a published row must have a pointer
+// (CHECK) and version numbers are unique per article (UNIQUE). These attack those
+// backstops directly, so the suite goes red if either constraint is removed; the
+// transaction's happy path is covered above.
+describe("INV-2 backstops (the constraints have teeth)", () => {
+  it("UNIQUE(article_id, version_number) rejects a duplicate version number", () => {
+    const a = createArticle(t.db, { slug: "u1", title: "T", body: "B", tags: [] });
+    const v1 = publish(t.db, a.id, a.draftVersion);
+    // A racing publish that computed the same number would hit this and roll back.
+    expect(() =>
+      t.db
+        .insert(articleVersions)
+        .values({ articleId: a.id, versionNumber: v1.versionNumber, title: "dupe", body: "dupe", tags: [] })
+        .run(),
+    ).toThrow(/UNIQUE constraint failed/);
+    expect(versionsOf(a.id)).toHaveLength(1);
+  });
+
+  it("CHECK refuses a published row with no pointer (no half-published state)", () => {
+    const a = createArticle(t.db, { slug: "u2", title: "T", body: "B", tags: [] });
+    expect(() =>
+      t.db.update(articles).set({ status: "published" }).where(eq(articles.id, a.id)).run(),
+    ).toThrow(/CHECK constraint failed/);
+    expect(getArticle(t.db, a.id).status).toBe("draft");
+  });
+
+  it("two independent connections publishing the same draft get distinct numbers, never a shared one", () => {
+    const a = createArticle(t.db, { slug: "u3", title: "T", body: "B", tags: [] });
+    const conn2 = t.openConnection();
+    // publish() does not bump draft_version, so the same token is valid on both;
+    // BEGIN IMMEDIATE serializes them, so they mint 1 then 2 (UNIQUE would reject a tie).
+    const first = publish(t.db, a.id, a.draftVersion);
+    const second = publish(conn2, a.id, a.draftVersion);
+    expect([first.versionNumber, second.versionNumber].sort()).toEqual([1, 2]);
+    expect(versionsOf(a.id).map((v) => v.versionNumber).sort()).toEqual([1, 2]);
   });
 });
