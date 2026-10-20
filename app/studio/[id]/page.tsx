@@ -41,6 +41,8 @@ export default function Editor() {
   const [body, setBody] = useState("");
   const [tags, setTags] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  // The last-saved draft, for detecting unsaved edits in the fields above.
+  const [saved, setSaved] = useState({ title: "", body: "", tags: "" });
 
   const load = useCallback(async () => {
     const [aRes, vRes] = await Promise.all([
@@ -56,6 +58,7 @@ export default function Editor() {
     setTitle(a.draftTitle);
     setBody(a.draftBody);
     setTags(a.draftTags.join(", "));
+    setSaved({ title: a.draftTitle, body: a.draftBody, tags: a.draftTags.join(", ") });
     setVersions(vRes.ok ? await vRes.json() : []);
   }, [id]);
 
@@ -85,6 +88,52 @@ export default function Editor() {
       .split(",")
       .map((t) => t.trim())
       .filter(Boolean);
+  const dirty = title !== saved.title || body !== saved.body || tags !== saved.tags;
+
+  const putDraft = (token: number) =>
+    fetch(`/api/articles/${id}/draft`, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title, body, tags: tagsArray(), expectedVersion: token }),
+    });
+
+  async function failMsg(res: Response, label: string) {
+    const j = await res.json().catch(() => ({}));
+    setMsg(`${label} failed (${res.status}): ${j.message ?? j.error ?? "error"}`);
+  }
+
+  async function onSave() {
+    setMsg(null);
+    const res = await putDraft(ev);
+    if (res.ok) setMsg("Saved");
+    else await failMsg(res, "Save");
+    await load();
+  }
+
+  // Publish what's on screen: if the fields have unsaved edits, save them first
+  // (so the natural edit -> Publish flow never silently publishes stale content
+  // or discards the edit), then publish the now-current draft.
+  async function onPublish() {
+    setMsg(null);
+    let token = ev;
+    if (dirty) {
+      const saveRes = await putDraft(token);
+      if (!saveRes.ok) {
+        await failMsg(saveRes, "Save before publish");
+        await load();
+        return;
+      }
+      token = (await saveRes.json()).draftVersion;
+    }
+    const res = await fetch(`/api/articles/${id}/publish`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ expectedVersion: token }),
+    });
+    if (res.ok) setMsg("Published");
+    else await failMsg(res, "Publish");
+    await load();
+  }
 
   return (
     <div className="space-y-6">
@@ -122,33 +171,15 @@ export default function Editor() {
         />
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <button
-          className="rounded bg-neutral-800 px-3 py-1.5 text-sm text-white"
-          onClick={() =>
-            act("Save draft", () =>
-              fetch(`/api/articles/${id}/draft`, {
-                method: "PUT",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({ title, body, tags: tagsArray(), expectedVersion: ev }),
-              }),
-            )
-          }
+          className="rounded bg-neutral-800 px-3 py-1.5 text-sm text-white disabled:opacity-40"
+          disabled={!dirty}
+          onClick={onSave}
         >
           Save draft
         </button>
-        <button
-          className="rounded bg-blue-700 px-3 py-1.5 text-sm text-white"
-          onClick={() =>
-            act("Publish", () =>
-              fetch(`/api/articles/${id}/publish`, {
-                method: "POST",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({ expectedVersion: ev }),
-              }),
-            )
-          }
-        >
+        <button className="rounded bg-blue-700 px-3 py-1.5 text-sm text-white" onClick={onPublish}>
           Publish
         </button>
         {article.status === "published" && (
@@ -161,6 +192,7 @@ export default function Editor() {
             Unpublish
           </button>
         )}
+        {dirty && <span className="text-xs text-amber-700">unsaved changes</span>}
       </div>
 
       {msg && <p className="text-sm text-neutral-600">{msg}</p>}
