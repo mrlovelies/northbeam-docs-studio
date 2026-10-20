@@ -55,4 +55,23 @@ describe("input validation", () => {
     // @ts-expect-error slug must be a string
     expect(caught(() => createArticle(t.db, { slug: 123, title: "T", body: "B", tags: [] }))).toBeInstanceOf(ValidationError);
   });
+
+  it("normalizes a slug to a URL-safe form (slugify) on create", () => {
+    const cases: [string, string][] = [
+      ["Testy Laroo", "testy-laroo"],
+      ["Has  Spaces", "has-spaces"],
+      ["UPPER Case", "upper-case"],
+      ["already-good", "already-good"],
+      ["  --trim--me--  ", "trim-me"],
+    ];
+    for (const [input, expected] of cases) {
+      const a = createArticle(t.db, { slug: input, title: "T", body: "B", tags: [] });
+      expect(a.slug).toBe(expected);
+    }
+  });
+
+  it("rejects a slug with no URL-safe characters with 400", () => {
+    expect(caught(() => createArticle(t.db, { slug: "!!!", title: "T", body: "B", tags: [] }))).toBeInstanceOf(ValidationError);
+    expect(caught(() => createArticle(t.db, { slug: "   ", title: "T", body: "B", tags: [] }))).toBeInstanceOf(ValidationError);
+  });
 });
