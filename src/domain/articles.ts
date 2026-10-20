@@ -246,3 +246,53 @@ export function deleteVersion(db: DrizzleDb, id: string, versionId: string): voi
 
   db.delete(articleVersions).where(eq(articleVersions.id, version.id)).run();
 }
+
+// --- Public reader (anonymous). Reads go THROUGH the live pointer and are gated
+// on status='published', never touching draft_* (INV-1, D7). ---
+
+export interface PublishedListItem {
+  slug: string;
+  title: string;
+  tags: string[];
+  publishedAt: string | null;
+}
+
+export interface PublishedArticle extends PublishedListItem {
+  body: string;
+}
+
+// List currently-published articles, newest first. title/tags come from the live
+// version via the pointer, so an edited-but-unpublished draft never shows here.
+export function listPublished(db: DrizzleDb): PublishedListItem[] {
+  return db
+    .select({
+      slug: articles.slug,
+      title: articleVersions.title,
+      tags: articleVersions.tags,
+      publishedAt: articles.publishedAt,
+    })
+    .from(articles)
+    .innerJoin(articleVersions, eq(articles.currentPublishedVersionId, articleVersions.id))
+    .where(eq(articles.status, "published"))
+    .orderBy(desc(articles.publishedAt))
+    .all();
+}
+
+// Fetch one published article by slug, rendered from its live version. Unknown,
+// draft-only, and unpublished slugs all 404 alike, so existence never leaks.
+export function getPublished(db: DrizzleDb, slug: string): PublishedArticle {
+  const row = db
+    .select({
+      slug: articles.slug,
+      title: articleVersions.title,
+      body: articleVersions.body,
+      tags: articleVersions.tags,
+      publishedAt: articles.publishedAt,
+    })
+    .from(articles)
+    .innerJoin(articleVersions, eq(articles.currentPublishedVersionId, articleVersions.id))
+    .where(and(eq(articles.slug, slug), eq(articles.status, "published")))
+    .get();
+  if (!row) throw new NotFoundError(`no published article at ${slug}`);
+  return row;
+}

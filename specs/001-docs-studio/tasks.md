@@ -56,7 +56,7 @@ commits reference task + invariant, e.g. `(T017, INV-2)`.
 ## Phase 6: Public reader path [INV-1]
 
 - [x] T025 [INV-1] Test (first): lists only published; single view renders the live snapshot, never the draft; 404 for draft-only, unpublished, or unknown slug (`tests/public-reader.test.ts`)
-- [ ] T026 [INV-1] Service + routes: public list (title, tags, published date) and public view rendering from the live version via the pointer, gated on `status='published'` (`app/api/public/articles/route.ts`, `.../[slug]/route.ts`)
+- [x] T026 [INV-1] Service + routes: public list (title, tags, published date) and public view rendering from the live version via the pointer, gated on `status='published'` (`app/api/public/articles/route.ts`, `.../[slug]/route.ts`)
 
 ## Phase 7: UI (Tailwind; tiebreaker, kept minimal)
 
