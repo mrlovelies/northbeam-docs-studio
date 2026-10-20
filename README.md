@@ -14,7 +14,7 @@ toolchain; if it does build from source, you need a C/C++ compiler and Python
 ```bash
 npm install
 npm run setup   # migrate + seed demo content (idempotent, safe to re-run)
-npm test        # 26 invariant + behavior tests
+npm test        # the invariant + behavior suite (33 passing)
 npm run dev     # http://localhost:3000
 ```
 
