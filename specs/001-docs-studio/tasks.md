@@ -61,7 +61,7 @@ commits reference task + invariant, e.g. `(T017, INV-2)`.
 ## Phase 7: UI (Tailwind; tiebreaker, kept minimal)
 
 - [x] T027 [P] Authoring UI: article list, editor form (title, slug, body, tags), publish/unpublish, history panel with restore (`app/(studio)/...`)
-- [ ] T028 [P] Public read view: published list + article page rendering Markdown via `react-markdown` (`app/(public)/...`)
+- [x] T028 [P] Public read view: published list + article page rendering Markdown via `react-markdown` (`app/(public)/...`)
 
 ## Phase 8: Deliverables
 
