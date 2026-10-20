@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "setup": "tsx src/db/seed.ts",
+    "seed:demo": "tsx src/db/seed-demo.ts",
     "test": "vitest run"
   },
   "dependencies": {
