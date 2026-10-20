@@ -66,7 +66,7 @@ commits reference task + invariant, e.g. `(T017, INV-2)`.
 ## Phase 8: Deliverables
 
 - [x] T029 Idempotent seed for `npm run setup`; verify a clean checkout runs `npm install && npm run setup && npm test` (`src/db/seed.ts`)
-- [ ] T030 README: how to run, data model + why, one tradeoff, the 6-row invariant/enforcement/test traceability matrix, and the "Note on process" (`README.md`)
+- [x] T030 README: how to run, data model + why, one tradeoff, the 6-row invariant/enforcement/test traceability matrix, and the "Note on process" (`README.md`)
 - [ ] T031 Pre-submit: `tooling/sdd-check.sh audit` green (no-squash), full suite green via a single `npm test`
 
 ## Dependencies
