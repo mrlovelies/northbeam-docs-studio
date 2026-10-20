@@ -20,6 +20,10 @@ npm run dev     # http://localhost:3000
 
 `npm run dev` serves both surfaces: `/studio` (authoring) and `/` (public docs).
 
+For a richer dataset to click through (multi-version histories, a restored draft,
+an unpublished article, a deleted non-live version), run `npm run seed:demo`. It
+is idempotent and additive, and its slugs are distinct from the setup seed.
+
 ## What's built
 
 - Writer API: create, list, get, edit draft, publish, unpublish, list and get
@@ -77,6 +81,24 @@ full rollback) would prove it more directly, but `publish()` exposes no injectio
 point for that without contorting the code, so it is left as a reasonable next
 test to add. `UNIQUE (article_id, version_number)` turns a concurrent-publish
 numbering race into a rollback rather than a duplicate.
+
+## Verify it yourself
+
+With the app running (`npm run dev`, and `npm run seed:demo` for data that already
+contains these states), you can attempt each violation by hand and watch the
+system refuse or absorb it, without reading code or running the suite.
+
+| Invariant | Try this | Expected |
+|---|---|---|
+| INV-1 frozen | Publish an article, then edit its draft in `/studio`, **Save**, and reload `/read/<slug>` | The public page still shows the published text; the draft edit is invisible until you publish again |
+| INV-2 atomic | Publish, Save an edit, publish again; watch the history panel | Exactly one new version per publish, numbered in order, the live pointer moves to the newest, and status is never "published" with no version. The crash-safety proof is the transaction plus the test, not something observable from a browser |
+| INV-3 live undeletable | In the history panel, try to Delete the version marked `live` or `active` | The button is disabled (its tooltip cites INV-3); calling `DELETE /api/articles/<id>/versions/<vid>` directly returns 409 `live_version` |
+| INV-4 restore | Restore an older version from the history panel | The draft fills with that version's content; the version count, status, and live pointer are unchanged, and nothing is published |
+| INV-5 no clobber | Open the editor in two tabs; Save in the first, then Save in the second without reloading it | The second save is rejected with 409 `version_conflict`; no accepted edit is silently lost |
+| INV-6 unpublish preserves | Unpublish an article (it then 404s at `/read/<slug>`), then publish it again | The original published date is kept and the prior version rows still exist |
+
+The writer API returns these as HTTP status codes directly; the same checks run
+headless in `tests/`.
 
 ## One tradeoff
 
