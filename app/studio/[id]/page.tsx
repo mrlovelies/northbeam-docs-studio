@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
 
 type Article = {
   id: string;
@@ -80,7 +81,16 @@ export default function Editor() {
     await load();
   }
 
-  if (!article) return <p className="text-neutral-500">{msg ?? "Loading..."}</p>;
+  if (!article) {
+    return (
+      <div className="space-y-3 text-neutral-500">
+        <p>{msg ?? "Loading..."}</p>
+        <Link href="/studio" className="text-sm text-blue-700 underline">
+          ← All articles
+        </Link>
+      </div>
+    );
+  }
 
   const ev = article.draftVersion;
   const tagsArray = () =>
@@ -141,7 +151,19 @@ export default function Editor() {
         <Link href="/studio" className="text-sm text-neutral-600 hover:underline">
           ← All articles
         </Link>
-        <StatusBadge status={article.status} />
+        <div className="flex items-center gap-3">
+          {article.status === "published" && (
+            <a
+              href={`/read/${article.slug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm text-blue-700 hover:underline"
+            >
+              View published ↗
+            </a>
+          )}
+          <StatusBadge status={article.status} />
+        </div>
       </div>
 
       <div className="space-y-3">
@@ -169,6 +191,15 @@ export default function Editor() {
           onChange={(e) => setBody(e.target.value)}
           placeholder="Markdown body"
         />
+      </div>
+
+      <div className="space-y-1">
+        <div className="text-xs font-medium text-neutral-500">Preview</div>
+        <div className="markdown min-h-16 rounded border border-neutral-200 bg-white px-3 py-2 text-sm">
+          {/* Mirror the public page: the title is the heading, so drop a leading
+              "# ..." in the body here too. */}
+          <ReactMarkdown>{body.replace(/^#\s+.*(\r?\n)+/, "")}</ReactMarkdown>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

@@ -21,7 +21,11 @@ END;
 `;
 
 // Apply schema migrations and the immutability trigger to an open connection.
-// Reused by the setup CLI and by the test harness.
+// This is the single supported init path (the setup CLI and the test harness
+// both call it). The trigger can't be expressed in the Drizzle schema, so it is
+// applied here rather than in the generated migration SQL; initializing a DB by
+// running drizzle-kit directly would skip it (the service-level INV-1 guarantee
+// still holds, but the DB-level backstop would be absent until setup runs).
 export function applyMigrations(sqlite: DatabaseType.Database): void {
   migrate(drizzle(sqlite), { migrationsFolder: MIGRATIONS_DIR });
   sqlite.exec(IMMUTABILITY_TRIGGER);

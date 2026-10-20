@@ -38,7 +38,9 @@ export default async function ReadArticle({
         ))}
       </div>
       <div className="markdown">
-        <ReactMarkdown>{article.body}</ReactMarkdown>
+        {/* The title is rendered above as the page heading, so a leading "# ..."
+            in the body would show it twice; drop it. Deeper headings are kept. */}
+        <ReactMarkdown>{article.body.replace(/^#\s+.*(\r?\n)+/, "")}</ReactMarkdown>
       </div>
     </article>
   );
