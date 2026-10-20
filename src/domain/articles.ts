@@ -46,11 +46,24 @@ function validateTags(tags: unknown): void {
   }
 }
 
+// Normalize a user-entered slug to a URL-safe form: lowercase, with runs of
+// non-alphanumeric characters collapsed to a single hyphen and no leading or
+// trailing hyphen. So "Testy Laroo" becomes "testy-laroo". A raw space would be
+// percent-encoded in the /read/<slug> URL and fail to resolve, so slugs are
+// normalized here rather than stored verbatim.
+function slugify(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 // Create a new article as an unpublished draft.
 export function createArticle(db: DrizzleDb, input: CreateArticleInput): Article {
-  if (typeof input.slug !== "string" || !input.slug.trim()) {
-    throw new ValidationError("slug is required");
-  }
+  if (typeof input.slug !== "string") throw new ValidationError("slug is required");
+  const slug = slugify(input.slug);
+  if (!slug) throw new ValidationError("slug must contain at least one letter or number");
   if (typeof input.title !== "string" || !input.title.trim()) {
     throw new ValidationError("title is required");
   }
@@ -60,7 +73,7 @@ export function createArticle(db: DrizzleDb, input: CreateArticleInput): Article
     return db
       .insert(articles)
       .values({
-        slug: input.slug,
+        slug,
         draftTitle: input.title,
         draftBody: input.body ?? "",
         draftTags: input.tags ?? [],
@@ -69,7 +82,7 @@ export function createArticle(db: DrizzleDb, input: CreateArticleInput): Article
       .get();
   } catch (e) {
     if (isSlugConflict(e)) {
-      throw new ConflictError("slug_taken", `slug "${input.slug}" is already in use`);
+      throw new ConflictError("slug_taken", `slug "${slug}" is already in use`);
     }
     throw e;
   }
