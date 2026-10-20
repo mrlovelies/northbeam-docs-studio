@@ -96,8 +96,11 @@ export default function Editor() {
       </div>
 
       <div className="space-y-3">
-        <div className="text-xs text-neutral-500">
-          /{article.slug} · draft v{article.draftVersion}
+        <div
+          className="text-xs text-neutral-500"
+          title="Draft revision: the optimistic-lock token. It bumps on every save and rejects stale writes. Not a published version number."
+        >
+          /{article.slug} · draft rev {article.draftVersion}
         </div>
         <input
           className="w-full rounded border border-neutral-300 px-3 py-2"
@@ -169,7 +172,8 @@ export default function Editor() {
         ) : (
           <ul className="space-y-1">
             {versions.map((v) => {
-              const isLive = v.id === article.currentPublishedVersionId;
+              const isPointer = v.id === article.currentPublishedVersionId;
+              const isServed = isPointer && article.status === "published";
               return (
                 <li
                   key={v.id}
@@ -177,9 +181,18 @@ export default function Editor() {
                 >
                   <span>
                     v{v.versionNumber} · {v.title}
-                    {isLive && (
-                      <span className="ml-2 rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-800">
-                        live
+                    {isPointer && (
+                      <span
+                        className={`ml-2 rounded px-1.5 py-0.5 text-xs ${
+                          isServed ? "bg-green-100 text-green-800" : "bg-amber-100 text-amber-800"
+                        }`}
+                        title={
+                          isServed
+                            ? "Live: served to readers right now."
+                            : "Active snapshot: the article still points here, but it is hidden from readers while unpublished."
+                        }
+                      >
+                        {isServed ? "live" : "active"}
                       </span>
                     )}
                   </span>
@@ -200,8 +213,12 @@ export default function Editor() {
                     </button>
                     <button
                       className="text-red-700 hover:underline disabled:opacity-40"
-                      disabled={isLive}
-                      title={isLive ? "The live version can't be deleted (INV-3)" : ""}
+                      disabled={isPointer}
+                      title={
+                        isPointer
+                          ? "The version this article points at can't be deleted (INV-3)"
+                          : ""
+                      }
                       onClick={() =>
                         act(`Delete v${v.versionNumber}`, () =>
                           fetch(`/api/articles/${id}/versions/${v.id}`, { method: "DELETE" }),
