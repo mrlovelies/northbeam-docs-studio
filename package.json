@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "setup": "tsx src/db/migrate.ts",
+    "setup": "tsx src/db/seed.ts",
     "test": "vitest run"
   },
   "dependencies": {
