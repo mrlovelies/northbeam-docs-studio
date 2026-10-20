@@ -27,10 +27,34 @@ function isSlugConflict(e: unknown): boolean {
   return e instanceof Error && /UNIQUE constraint failed: articles\.slug/.test(e.message);
 }
 
+// The optimistic-lock token must be an integer. Malformed input is a 400, not a
+// silent coercion, and updateDraft/publish/restore must all agree on this so a
+// token that one path accepts cannot be one another path rejects.
+function requireVersionToken(v: unknown): number {
+  if (typeof v !== "number" || !Number.isInteger(v)) {
+    throw new ValidationError("expectedVersion must be an integer");
+  }
+  return v;
+}
+
+// tags, when provided, must be an array of strings: anything else would be
+// frozen verbatim into an immutable version on publish (INV-1).
+function validateTags(tags: unknown): void {
+  if (tags === undefined) return;
+  if (!Array.isArray(tags) || !tags.every((t) => typeof t === "string")) {
+    throw new ValidationError("tags must be an array of strings");
+  }
+}
+
 // Create a new article as an unpublished draft.
 export function createArticle(db: DrizzleDb, input: CreateArticleInput): Article {
-  if (!input.slug?.trim()) throw new ValidationError("slug is required");
-  if (!input.title?.trim()) throw new ValidationError("title is required");
+  if (typeof input.slug !== "string" || !input.slug.trim()) {
+    throw new ValidationError("slug is required");
+  }
+  if (typeof input.title !== "string" || !input.title.trim()) {
+    throw new ValidationError("title is required");
+  }
+  validateTags(input.tags);
 
   try {
     return db
@@ -90,9 +114,8 @@ export function getVersion(db: DrizzleDb, id: string, versionId: string): Articl
 // Edit the draft. INV-5: the compare-and-set lives in the WHERE clause, so a
 // stale write matches zero rows and loses; a missing token is refused outright.
 export function updateDraft(db: DrizzleDb, id: string, input: UpdateDraftInput): Article {
-  if (input.expectedVersion === undefined || input.expectedVersion === null) {
-    throw new ValidationError("expectedVersion is required for a draft write");
-  }
+  const expectedVersion = requireVersionToken(input.expectedVersion);
+  validateTags(input.tags);
 
   const result = db
     .update(articles)
@@ -103,7 +126,7 @@ export function updateDraft(db: DrizzleDb, id: string, input: UpdateDraftInput):
       draftVersion: sql`${articles.draftVersion} + 1`,
       updatedAt: new Date().toISOString(),
     })
-    .where(and(eq(articles.id, id), eq(articles.draftVersion, input.expectedVersion)))
+    .where(and(eq(articles.id, id), eq(articles.draftVersion, expectedVersion)))
     .run();
 
   if (result.changes === 0) {
@@ -126,15 +149,13 @@ export function updateDraft(db: DrizzleDb, id: string, input: UpdateDraftInput):
 // a numbering race into a rollback. publishedAt is set once, never recomputed
 // (INV-6).
 export function publish(db: DrizzleDb, id: string, expectedVersion: number): ArticleVersion {
-  if (expectedVersion === undefined || expectedVersion === null) {
-    throw new ValidationError("expectedVersion is required to publish");
-  }
+  const token = requireVersionToken(expectedVersion);
   return db.transaction(
     (tx) => {
       const article = tx.select().from(articles).where(eq(articles.id, id)).get();
       if (!article) throw new NotFoundError(`article ${id} not found`);
       // INV-5: don't snapshot a draft that moved under the writer.
-      if (article.draftVersion !== expectedVersion) {
+      if (article.draftVersion !== token) {
         throw new ConflictError("version_conflict", "draft is out of date", {
           current: article.draftVersion,
         });
@@ -189,9 +210,7 @@ export function restore(
   versionId: string,
   expectedVersion: number,
 ): Article {
-  if (expectedVersion === undefined || expectedVersion === null) {
-    throw new ValidationError("expectedVersion is required to restore");
-  }
+  const token = requireVersionToken(expectedVersion);
   const version = getVersion(db, id, versionId); // 404 unless it belongs to the article
 
   const result = db
@@ -203,7 +222,7 @@ export function restore(
       draftVersion: sql`${articles.draftVersion} + 1`,
       updatedAt: new Date().toISOString(),
     })
-    .where(and(eq(articles.id, id), eq(articles.draftVersion, expectedVersion)))
+    .where(and(eq(articles.id, id), eq(articles.draftVersion, token)))
     .run();
 
   if (result.changes === 0) {
